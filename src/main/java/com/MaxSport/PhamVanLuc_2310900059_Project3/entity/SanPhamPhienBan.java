@@ -3,7 +3,7 @@ package com.MaxSport.PhamVanLuc_2310900059_Project3.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // Nhớ import dòng này
 
 @Entity
 @Table(name = "san_pham_phien_ban")
@@ -12,7 +12,8 @@ public class SanPhamPhienBan extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "id_san_pham", nullable = false)
-    @JsonIgnore
+
+    @JsonIgnoreProperties({"phienBan", "hibernateLazyInitializer", "handler"})
     private SanPham sanPham;
 
     @Column(name = "ma_sku_phien_ban", unique = true)

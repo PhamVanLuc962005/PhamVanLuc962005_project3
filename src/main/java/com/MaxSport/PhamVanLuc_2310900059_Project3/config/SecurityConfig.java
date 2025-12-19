@@ -18,6 +18,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.Collections; // Import thêm thư viện này
 
 @Configuration
 @EnableWebSecurity
@@ -43,47 +44,41 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         // -------------------------------------------------------------
-                        // 1. CÁC API CÔNG KHAI (Ai cũng truy cập được)
+                        // 1. QUAN TRỌNG: Cho phép tất cả request OPTIONS (Pre-flight)
+                        // Giúp trình duyệt không bị chặn khi hỏi CORS
                         // -------------------------------------------------------------
-                        .requestMatchers("/api/auth/**").permitAll() // Đăng nhập/Đăng ký
-                        .requestMatchers("/images/**").permitAll()   // Xem ảnh
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // Swagger
-                        .requestMatchers(HttpMethod.GET, "/api/banner/hien-thi").permitAll() // Xem banner
-                        .requestMatchers("/api/payment/**").permitAll() // Thanh toán
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // --- SẢN PHẨM & KHO (Xem thì mở, sửa thì Admin) ---
+                        // -------------------------------------------------------------
+                        // 2. CÁC API CÔNG KHAI
+                        // -------------------------------------------------------------
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/images/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/banner/hien-thi").permitAll()
+                        .requestMatchers("/api/payment/**").permitAll()
+
+                        // --- SẢN PHẨM & KHO ---
                         .requestMatchers(HttpMethod.GET, "/api/san-pham/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/kho/xem-ton-kho").permitAll()
 
-                        // --- ĐÁNH GIÁ & BÀI VIẾT (Xem thì mở) ---
+                        // --- ĐÁNH GIÁ & BÀI VIẾT ---
                         .requestMatchers(HttpMethod.GET, "/api/danh-gia/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/bai-viet/**").permitAll()
 
-                        // --- DANH MỤC & THƯƠNG HIỆU (SỬA PHẦN NÀY) ---
-                        // Cho phép xem danh sách
+                        // --- DANH MỤC & THƯƠNG HIỆU ---
                         .requestMatchers(HttpMethod.GET, "/api/danh-muc/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/thuong-hieu/**").permitAll()
 
                         // -------------------------------------------------------------
-                        // 2. CÁC API DÀNH RIÊNG CHO ADMIN
+                        // 3. CÁC API DÀNH RIÊNG CHO ADMIN
                         // -------------------------------------------------------------
-
-                        // Quản lý Danh mục & Thương hiệu (POST, PUT, DELETE)
-                        // Vì dòng GET đã khai báo ở trên rồi, nên dòng này sẽ bắt các method còn lại
                         .requestMatchers("/api/danh-muc/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/thuong-hieu/**").hasAuthority("ADMIN")
-
-                        // Quản lý Sản phẩm & Kho
                         .requestMatchers("/api/kho/**").hasAuthority("ADMIN")
-
-                        // Quản lý Đơn hàng & Thống kê
                         .requestMatchers("/api/don-hang/quan-ly/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/thong-ke/**").hasAuthority("ADMIN")
-
-                        // Quản lý Người dùng
                         .requestMatchers("/api/nguoi-dung/quan-ly/**").hasAuthority("ADMIN")
-
-                        // Quản lý khác (Banner, Mã giảm giá, Bài viết)
                         .requestMatchers("/api/banner/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/ma-giam-gia/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/bai-viet/**").hasAuthority("ADMIN")
@@ -91,13 +86,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/khieu-nai/quan-ly/**").hasAuthority("ADMIN")
 
                         // -------------------------------------------------------------
-                        // 3. CÁC API CẦN ĐĂNG NHẬP (User hoặc Admin đều được)
+                        // 4. CÁC API CẦN ĐĂNG NHẬP
                         // -------------------------------------------------------------
                         .requestMatchers(HttpMethod.POST, "/api/danh-gia/**").authenticated()
-                        .requestMatchers("/api/nguoi-dung/**").authenticated() // Sửa profile
-                        .requestMatchers("/api/khieu-nai/**").authenticated()  // Gửi khiếu nại
+                        .requestMatchers("/api/nguoi-dung/**").authenticated()
+                        .requestMatchers("/api/khieu-nai/**").authenticated()
 
-                        // Tất cả các request còn lại bắt buộc phải đăng nhập
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -108,8 +102,10 @@ public class SecurityConfig {
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        configuration.setAllowedOriginPatterns(Collections.singletonList("*"));
+
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
 
